@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/tv_detail_movie_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:background="@color/colorAccent"
+            android:padding="8dp"
+            android:textColor="@color/textWhite"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/iv_detail_movie_poster"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_detail_movie_title"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/movie_poster"
+            android:padding="8dp"
+            android:scaleType="fitXY" />
+
+        <TextView
+            android:id="@+id/tv_release_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_detail_movie_title"
+            android:layout_toEndOf="@+id/iv_detail_movie_poster"
+            android:padding="16dp"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/tv_rating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_release_date"
+            android:layout_toEndOf="@+id/iv_detail_movie_poster"
+            android:padding="16dp"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_overview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/iv_detail_movie_poster"
+            android:padding="8dp"
+            android:textSize="16sp" />
+
+    </RelativeLayout>
+
+</ScrollView>
