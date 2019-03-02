@@ -60,9 +60,10 @@ public class MovieDetails extends AppCompatActivity {
     }
 
     /**
-     * Takes a date String in this format YYYY-MM-DD and returns the year String.
+     * Takes a date String in this format YYYY-MM-DD and returns a date String in the following
+     * format MMM d, yyyy.
      * @param dateString String in the following format: YYYY-MM-DD
-     * @return String representation of the movies year.
+     * @return String representation of the movies release date in the format MMM d, yyyy.
      */
     private String getFormattedDate(String dateString) {
         SimpleDateFormat oldDateFormat = new SimpleDateFormat(OLD_DATE_FORMAT, Locale.US);
