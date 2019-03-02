@@ -19,14 +19,13 @@ import com.nbvarnado.popularmovies.model.Page;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.http.GET;
-import retrofit2.http.Path;
-import retrofit2.http.Query;
 
 enum SortType {
     POPULAR, RATINGS
@@ -36,40 +35,42 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     private final String TAG = MainActivity.class.getSimpleName();
 
-    private RecyclerView mRecyclerView;
-    private MovieAdapter mMovieAdapter;
-    private ProgressBar mLoadingIndicator;
-    private TextView mErrorMessage;
+    // State keys
+    private static final String LIFECYCLE_CALLBACK_SORT_KEY = "sort_type";
 
-    private SortType sortType;
+    // Intent extras
+    public static final String EXTRA_MOVIE = "com.nbvarnado.popularmovie.MOVIE";
 
+    // Sorting types
     private static final String POPULAR = "popular";
     private static final String RATINGS = "top_rated";
 
-    public static final String EXTRA_MOVIE = "com.nbvarnado.popularmovie.MOVIE";
-
+    // Movie data
     public static final String TITLE = "title";
     public static final String IMAGE = "image";
     public static final String RELEASE_DATE = "release_date";
     public static final String VOTE_AVERAGE = "vote_average";
     public static final String OVERVIEW = "overview";
 
+    // API URL data
     private static final String BASE_URL = "http://api.themoviedb.org/3/movie/";
-
     // TODO: Add API KEY here.
-    private static final String API_KEY = "";
+    private static final String API_KEY = BuildConfig.ApiKey;
 
-    private static final String API_KEY_PARAM = "api_key";
+    @BindView(R.id.rv_movies) RecyclerView mRecyclerView;
+    @BindView(R.id.pb_loading) ProgressBar mLoadingIndicator;
+    @BindView(R.id.tv_error_message) TextView mErrorMessage;
+
+    private MovieAdapter mMovieAdapter;
+    private SortType sortType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
         sortType = sortType == null ? SortType.POPULAR : sortType;
-        setContentView(R.layout.activity_main);
-        mRecyclerView = findViewById(R.id.rv_movies);
-        mLoadingIndicator = findViewById(R.id.pb_loading);
-        mErrorMessage = findViewById(R.id.error_message);
 
         mRecyclerView.setHasFixedSize(true);
 
@@ -78,6 +79,13 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mMovieAdapter = new MovieAdapter(this);
         mRecyclerView.setAdapter(mMovieAdapter);
         loadMovies();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        String sortTypeString = sortType == SortType.POPULAR ? POPULAR : RATINGS;
+        outState.putString(LIFECYCLE_CALLBACK_SORT_KEY, sortTypeString);
     }
 
     @Override
@@ -190,14 +198,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mLoadingIndicator.setVisibility(View.INVISIBLE);
         mRecyclerView.setVisibility(View.INVISIBLE);
         mErrorMessage.setVisibility(View.VISIBLE);
-    }
-
-    /**
-     * Interface for querying themoviedb API.
-     */
-    public interface MovieDbService {
-        @GET("{sort}/")
-        Call<Page> getResults(@Path("sort") String sort, @Query(API_KEY_PARAM) String apiKey);
     }
 
 }
