@@ -4,4 +4,11 @@
     <string name="sort_popular">Sort by popular</string>
     <string name="sort_rating">Sort by rating</string>
     <string name="error_message">Error loading movies</string>
+
+    <!-- Used for HTTP Retrofit calls  -->
+    <string name="popular">popular</string>
+    <string name="top_rated">top_rated</string>
+    <string name="favorite">favorite</string>
+    <string name="trailers">Trailers</string>
+    <string name="reviews">Reviews</string>
 </resources>

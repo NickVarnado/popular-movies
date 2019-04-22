@@ -1,13 +1,14 @@
-package com.nbvarnado.popularmovies;
+package com.nbvarnado.popularmovies.ui.main;
 
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import com.nbvarnado.popularmovies.model.Movie;
+import com.nbvarnado.popularmovies.R;
+import com.nbvarnado.popularmovies.data.database.movies.Movie;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -25,7 +26,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
      * The interface for onClick.
      */
     public interface MovieClickListener {
-        void onMovieClick(Movie movie);
+        void onMovieClick(int id);
     }
 
     MovieAdapter(MovieClickListener listener) {
@@ -42,10 +43,11 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     @Override
     public void onBindViewHolder(@NonNull MovieViewHolder movieViewHolder, int i) {
         Movie movie = mMovies.get(i);
+        String imageUrl = getImageUrl(movie.getPosterPath());
         Picasso.get()
-                .load(movie.getImageUrl())
+                .load(imageUrl)
                 .placeholder(R.drawable.user_placeholder)
-                .error(R.drawable.user_placeholder_error)
+                .error(R.drawable.error)
                 .into(movieViewHolder.mImageView);
     }
 
@@ -59,10 +61,22 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
     /**
      * Sets the movie data.
-     * @param movieData List of Movies.
+     * @param movieData List of Movie.
      */
     public void setMovieData(List<Movie> movieData) {
         mMovies = movieData;
+    }
+
+    /**
+     * Get's the image URL String.
+     * @param posterPath path for the poster
+     * @return The String for the image URL.
+     */
+    public String getImageUrl(String posterPath) {
+        String IMAGE_BASE_URL = "http://image.tmdb.org/t/p/";
+        // Size can be one of the following. "w92", "w154", "w185", "w342", "w500", "w780", or "original".
+        String IMAGE_SIZE = "w185";
+        return IMAGE_BASE_URL + IMAGE_SIZE + posterPath;
     }
 
     /**
@@ -82,7 +96,9 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
         public void onClick(View v) {
             int position = getAdapterPosition();
             Movie movie = mMovies.get(position);
-            mOnClickListener.onMovieClick(movie);
+            int id = movie.getId();
+            mOnClickListener.onMovieClick(id);
         }
     }
+
 }

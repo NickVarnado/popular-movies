@@ -1,12 +1,14 @@
-package com.nbvarnado.popularmovies;
+package com.nbvarnado.popularmovies.ui.main;
 
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -14,54 +16,31 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.nbvarnado.popularmovies.model.Movie;
-import com.nbvarnado.popularmovies.model.Page;
-
-import java.util.List;
+import com.nbvarnado.popularmovies.R;
+import com.nbvarnado.popularmovies.SortType;
+import com.nbvarnado.popularmovies.ui.detail.MovieDetailsActivity;
+import com.nbvarnado.popularmovies.util.InjectorUtils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
-enum SortType {
-    POPULAR, RATINGS
-}
-
-public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieClickListener {
+public class MainActivity extends AppCompatActivity
+        implements MovieAdapter.MovieClickListener {
 
     private final String TAG = MainActivity.class.getSimpleName();
 
     // State keys
     private static final String LIFECYCLE_CALLBACK_SORT_KEY = "sort_type";
 
-    // Intent extras
-    public static final String EXTRA_MOVIE = "com.nbvarnado.popularmovie.MOVIE";
-
-    // Sorting types
-    private static final String POPULAR = "popular";
-    private static final String RATINGS = "top_rated";
-
-    // Movie data
-    public static final String TITLE = "title";
-    public static final String IMAGE = "image";
-    public static final String RELEASE_DATE = "release_date";
-    public static final String VOTE_AVERAGE = "vote_average";
-    public static final String OVERVIEW = "overview";
-
-    // API URL data
-    private static final String BASE_URL = "http://api.themoviedb.org/3/movie/";
-    // TODO: Add API KEY here.
-    private static final String API_KEY = BuildConfig.ApiKey;
+    // Intent Extra
+    public static final String EXTRA_MOVIE_ID = "extra_movie_id";
 
     @BindView(R.id.rv_movies) RecyclerView mRecyclerView;
     @BindView(R.id.pb_loading) ProgressBar mLoadingIndicator;
     @BindView(R.id.tv_error_message) TextView mErrorMessage;
 
     private MovieAdapter mMovieAdapter;
+    private MainActivityViewModel mMainActivityViewModel;
     private SortType sortType;
 
     @Override
@@ -74,32 +53,28 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         mRecyclerView.setHasFixedSize(true);
 
-        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(this, 2, GridLayoutManager.VERTICAL, false);
+        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(this, 2, RecyclerView.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
         mMovieAdapter = new MovieAdapter(this);
         mRecyclerView.setAdapter(mMovieAdapter);
-        loadMovies();
+
+        showLoading();
+        loadMovies(sortType);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        final String POPULAR = getResources().getString(R.string.popular);
+        final String RATINGS = getResources().getString(R.string.top_rated);
         String sortTypeString = sortType == SortType.POPULAR ? POPULAR : RATINGS;
         outState.putString(LIFECYCLE_CALLBACK_SORT_KEY, sortTypeString);
     }
 
     @Override
-    public void onMovieClick(Movie movie) {
-        Intent intent = new Intent(this, MovieDetails.class);
-
-        Bundle bundle = new Bundle();
-        bundle.putString(TITLE, movie.getTitle());
-        bundle.putString(IMAGE, movie.getImageUrl());
-        bundle.putString(RELEASE_DATE, movie.getReleaseDate());
-        bundle.putString(VOTE_AVERAGE, movie.getVoteAverage());
-        bundle.putString(OVERVIEW, movie.getOverview());
-
-        intent.putExtra(EXTRA_MOVIE, bundle);
+    public void onMovieClick(int id) {
+        Intent intent = new Intent(this, MovieDetailsActivity.class);
+        intent.putExtra(EXTRA_MOVIE_ID, id);
         startActivity(intent);
     }
 
@@ -111,8 +86,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         int idOfItemToShow = sortType == SortType.POPULAR ? R.id.sort_rating : R.id.sort_popular;
         MenuItem itemToHide = menu.findItem(idOfItemToHide);
         MenuItem itemToShow = menu.findItem(idOfItemToShow);
-        itemToHide.setVisible(false);
-        itemToShow.setVisible(true);
         return true;
     }
 
@@ -128,49 +101,47 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         switch (item.getItemId()) {
             case R.id.sort_popular:
                 sortType = SortType.POPULAR;
-                loadMovies();
+                showLoading();
+                loadMovies(sortType);
                 return true;
             case R.id.sort_rating:
                 sortType = SortType.RATINGS;
-                loadMovies();
+                showLoading();
+                loadMovies(sortType);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    /**
-     * Uses Retrofit to get data from themoviedb API and set the movie data on the MovieAdapter.
-     */
-    private void loadMovies() {
-        showLoading();
-        String sort = sortType == SortType.POPULAR ? POPULAR : RATINGS;
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+    private void loadMovies(SortType sortType) {
+        String sort = getSort(sortType);
+        MainViewModelFactory factory = InjectorUtils.provideMainViewModelFactory(this, sort);
+        mMainActivityViewModel = ViewModelProviders.of (this, factory).get(MainActivityViewModel.class);
 
-        MovieDbService service = retrofit.create(MovieDbService.class);
-
-        Call<Page> call = service.getResults(sort, API_KEY);
-        call.enqueue(new Callback<Page>() {
-            @Override
-            public void onResponse(@NonNull Call<Page> call, @NonNull Response<Page> response) {
-                Page page = response.body();
-                if (page != null) {
-                    List<Movie> movies = page.getResults();
-                    mMovieAdapter.setMovieData(movies);
-                    mMovieAdapter.notifyDataSetChanged();
-                    showMovies();
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Page> call, @NonNull Throwable t) {
-                Log.e(TAG, t.getMessage());
+        mMainActivityViewModel.getMovies(sort).observe(this, movies -> {
+            if (movies != null) {
+                mMovieAdapter.setMovieData(movies);
+                mMovieAdapter.notifyDataSetChanged();
+                showMovies();
+            } else {
                 showError();
             }
+
         });
+    }
+
+    private String getSort(SortType sortType) {
+        switch (sortType) {
+            case POPULAR:
+                return getResources().getString(R.string.popular);
+            case RATINGS:
+                return getResources().getString(R.string.top_rated);
+            case FAVORITE:
+                return getResources().getString(R.string.favorite);
+            default:
+                return getResources().getString(R.string.popular);
+        }
     }
 
     /**
