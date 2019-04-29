@@ -17,12 +17,13 @@ import com.nbvarnado.popularmovies.data.database.trailers.TrailerDao;
 import com.nbvarnado.popularmovies.data.database.trailers.TrailersPage;
 import com.nbvarnado.popularmovies.data.network.MovieDataSource;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
@@ -35,7 +36,6 @@ public class MovieRepository {
 
     private static final Object LOCK = new Object();
     private static MovieRepository sInstance;
-    private static boolean mIsInitialized;
     private final MovieDao mMovieDao;
     private final ReviewDao mReviewDao;
     private final TrailerDao mTrailerDao;
@@ -43,6 +43,7 @@ public class MovieRepository {
     private final MovieDatabase mMovieDatabase;
     private final Context mContext;
     private final AppExecutors mAppExecutors;
+    private MutableLiveData<List<Movie>> movies;
 
     // TODO: Add API KEY here.
     private static final String API_KEY = BuildConfig.ApiKey;
@@ -59,7 +60,7 @@ public class MovieRepository {
         mReviewDao = mMovieDatabase.reviewDao();
         mTrailerDao = mMovieDatabase.trailerDao();
         mAppExecutors = executors;
-
+        movies = new MutableLiveData<>();
     }
 
     public synchronized static MovieRepository getInstance(Context context,
@@ -80,120 +81,162 @@ public class MovieRepository {
     /**
      * Uses Retrofit to get movie data from themoviedb API and save it to the database.
      */
-    private void loadMovies(String sort) {
+    private List<Movie> loadMovies(String sort) {
 
         Call<MoviesPage> call = mMovieDataSource.getService(mContext, mAppExecutors).getMovies(sort, API_KEY);
-        call.enqueue(new Callback<MoviesPage>() {
-            @Override
-            public void onResponse(@NonNull Call<MoviesPage> call, @NonNull Response<MoviesPage> response) {
-                MoviesPage page = response.body();
-                if (page != null) {
-                    List<Movie> movies = page.getMovies();
-                    mAppExecutors.diskIO().execute(() -> {
-                        for(Movie movie : movies) {
-                            movie.setSortBy(sort);
-                            mMovieDatabase.movieDao().insertMovie(movie);
-                        }
-                    });
+        List<Movie> movies = new ArrayList<>();
+        Response<MoviesPage> moviePageResponse = null;
+        try {
+            moviePageResponse = call.execute();
+            if (moviePageResponse.body() != null) {
+                movies = moviePageResponse.body().getMovies();
+                for(Movie movie : movies) {
+                    movie.setSortBy(sort);
+                    mMovieDatabase.movieDao().insertMovie(movie);
                 }
             }
-
-            @Override
-            public void onFailure(@NonNull Call<MoviesPage> call, @NonNull Throwable t) {
-                Log.e(TAG, t.getMessage());
-            }
-        });
-
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+        return movies;
     }
 
     /**
      * Uses Retrofit to get review data from themoviedb API and save it to the database.
      */
-    private void loadReviews(String movieId) {
+    private List<Review> loadReviews(String movieId) {
 
         Call<ReviewsPage> call = mMovieDataSource.getService(mContext, mAppExecutors).getReviews(movieId, API_KEY);
-        call.enqueue(new Callback<ReviewsPage>() {
-            @Override
-            public void onResponse(@NonNull Call<ReviewsPage> call, @NonNull Response<ReviewsPage> response) {
-                ReviewsPage page = response.body();
-                if (page != null) {
-                    List<Review> reviews = page.getReviews();
-                    mAppExecutors.diskIO().execute(() -> {
-                        for (Review review : reviews) {
-                            review.setMovieId(Integer.parseInt(movieId));
-                            mMovieDatabase.reviewDao().insertReview(review);
-                        }
-                    });
+        List<Review> reviews = new ArrayList<>();
+        Response<ReviewsPage> reviewPage = null;
+        try {
+            reviewPage = call.execute();
+            if (reviewPage.body() != null) {
+                reviews = reviewPage.body().getReviews();
+                for (Review review : reviews) {
+                    review.setMovieId(Integer.parseInt(movieId));
+                    mMovieDatabase.reviewDao().insertReview(review);
                 }
             }
-
-            @Override
-            public void onFailure(@NonNull Call<ReviewsPage> call, @NonNull Throwable t) {
-                Log.e(TAG, t.getMessage());
-            }
-        });
-
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+        return reviews;
     }
 
     /**
      * Uses Retrofit to get trailer data from themoviedb API and save it to the database.
      */
-    private void loadTrailers(String movieId) {
+    private List<Trailer> loadTrailers(String movieId) {
 
         Call<TrailersPage> call = mMovieDataSource.getService(mContext, mAppExecutors).getTrailers(movieId, API_KEY);
-        call.enqueue(new Callback<TrailersPage>() {
-            @Override
-            public void onResponse(@NonNull Call<TrailersPage> call, @NonNull Response<TrailersPage> response) {
-                TrailersPage page = response.body();
-                if (page != null) {
-                    List<Trailer> trailers = page.getTrailers();
-                    mAppExecutors.diskIO().execute(() -> {
-                        for (Trailer trailer : trailers) {
-                            trailer.setMovieId(Integer.parseInt(movieId));
-                            mMovieDatabase.trailerDao().insertTrailer(trailer);
-                        }
-                    });
+        List<Trailer> trailers = new ArrayList<>();
+        Response<TrailersPage> trailersPageResponse = null;
+        try {
+            trailersPageResponse = call.execute();
+            if (trailersPageResponse.body() != null) {
+                trailers = trailersPageResponse.body().getTrailers();
+                for (Trailer trailer : trailers) {
+                    trailer.setMovieId(Integer.parseInt(movieId));
+                    mMovieDatabase.trailerDao().insertTrailer(trailer);
                 }
             }
-
-            @Override
-            public void onFailure(@NonNull Call<TrailersPage> call, @NonNull Throwable t) {
-                Log.e(TAG, t.getMessage());
-            }
-        });
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+        return trailers;
 
     }
 
+    /**
+     * Set's isFavorite to 1 or 0 for the given movieId in the db.
+     * @param isFav
+     * @param movieId
+     */
     public void toggleFavorite(int isFav, int movieId) {
         mMovieDatabase.movieDao().toggleFavorite(isFav, movieId);
     }
 
+    /**
+     * Get's the LiveData object for the movie with the given id.
+     * @param id
+     * @return
+     */
     public LiveData<Movie> getMovie(int id) {
         LiveData<Movie> movie = mMovieDao.getMovieById(id);
         return movie;
     }
 
-    public LiveData<List<Movie>> getMovies(String sort) {
-        LiveData<List<Movie>> movies = mMovieDao.getMovies(sort);
-        if (movies.getValue() == null || movies.getValue().size() == 0) {
-            loadMovies(sort);
+    /**
+     * Get's the LiveDate object for the movies. If sort is favorites, the favorite movies are queried
+     * from the database. Otherwise the movies are queried from the database first. If nothing is
+     * returned from the database a network call is executed.
+     * @param sort Sort parameter.
+     * @return
+     */
+    public MutableLiveData<List<Movie>> getMovies(String sort) {
+        if (sort.equals("favorite")) {
+            AppExecutors.getInstance().diskIO().execute(() -> {
+                List<Movie> favoriteMovies = mMovieDao.getFavoriteMovies();
+                movies.postValue(favoriteMovies);
+            });
+        } else {
+            AppExecutors.getInstance().diskIO().execute(() -> {
+                List<Movie> moviesFromDb = mMovieDao.getMovies(sort);
+                if (moviesFromDb == null || moviesFromDb.size() == 0) {
+                    AppExecutors.getInstance().networkIO().execute(() -> {
+                        List<Movie> moviesFromNetwork = loadMovies(sort);
+                        movies.postValue(moviesFromNetwork);
+                    });
+                } else {
+                    movies.postValue(moviesFromDb);
+                }
+            });
         }
         return movies;
     }
 
+    /**
+     * Get's the LiveDate object for the reviews. The reviews are queried from the database first. If nothing is
+     * returned from the database a network call is executed.
+     * @param id of the movie to get the reviews for.
+     * @return
+     */
     public LiveData<List<Review>> getReviews(int id) {
-        LiveData<List<Review>> reviews = mReviewDao.getReviews(id);
-        if (reviews.getValue() == null || reviews.getValue().size() == 0) {
-            loadReviews(String.valueOf(id));
-        }
+        final MutableLiveData<List<Review>> reviews = new MutableLiveData<>();
+        AppExecutors.getInstance().diskIO().execute(() -> {
+            List<Review> reviewsFromDb = mReviewDao.getReviews(id);
+            if (reviewsFromDb == null || reviewsFromDb.size() == 0) {
+                AppExecutors.getInstance().networkIO().execute(() -> {
+                    List<Review> reviewsFromNetwork = loadReviews(String.valueOf(id));
+                    reviews.postValue(reviewsFromNetwork);
+                });
+            } else {
+                reviews.postValue(reviewsFromDb);
+            }
+        });
         return reviews;
     }
 
+    /**
+     * Get's the LiveDate object for the trailers. The trailers are queried from the database first. If nothing is
+     * returned from the database a network call is executed.
+     * @param id of the movie to get the reviews for.
+     * @return
+     */
     public LiveData<List<Trailer>> getTrailers(int id) {
-        LiveData<List<Trailer>> trailers = mTrailerDao.getTrailers(id);
-        if (trailers.getValue() == null || trailers.getValue().size() == 0) {
-            loadTrailers(String.valueOf(id));
-        }
+        final MutableLiveData<List<Trailer>> trailers = new MutableLiveData<>();
+        AppExecutors.getInstance().diskIO().execute(() -> {
+            List<Trailer> trailersFromDb = mTrailerDao.getTrailers(id);
+            if (trailersFromDb == null || trailersFromDb.size() == 0) {
+                AppExecutors.getInstance().networkIO().execute(() -> {
+                    List<Trailer> trailersFromNetwork = loadTrailers(String.valueOf(id));
+                    trailers.postValue(trailersFromNetwork);
+                });
+            } else {
+                trailers.postValue(trailersFromDb);
+            }
+        });
         return trailers;
     }
 

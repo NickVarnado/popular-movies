@@ -16,7 +16,7 @@ public class MovieDetailsViewModel extends ViewModel {
     private LiveData<List<Trailer>> mTrailers;
     private LiveData<List<Review>> mReviews;
 
-    public MovieDetailsViewModel(MovieRepository repository, int id) {
+    MovieDetailsViewModel(MovieRepository repository, int id) {
         mMovie = repository.getMovie(id);
         mTrailers = repository.getTrailers(id);
         mReviews = repository.getReviews(id);

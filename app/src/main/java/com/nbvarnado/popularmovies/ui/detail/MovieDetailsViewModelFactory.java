@@ -2,6 +2,7 @@ package com.nbvarnado.popularmovies.ui.detail;
 
 import com.nbvarnado.popularmovies.data.MovieRepository;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -15,8 +16,9 @@ public class MovieDetailsViewModelFactory extends ViewModelProvider.NewInstanceF
         this.mMovieId = movieId;
     }
 
+    @NonNull
     @Override
-    public <T extends ViewModel> T create(Class<T> modelClass) {
+    public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         return (T) new MovieDetailsViewModel(mMovieReposiory, mMovieId);
     }
 

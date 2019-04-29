@@ -12,7 +12,7 @@ import androidx.room.Query;
 public interface ReviewDao {
 
     @Query("SELECT * FROM review_table where movieId=:id")
-    LiveData<List<Review>> getReviews(int id);
+    List<Review> getReviews(int id);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertReviews(Review... reviews);

@@ -3,6 +3,8 @@ package com.nbvarnado.popularmovies.ui.main;
 import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import androidx.lifecycle.ViewModelProviders;
@@ -17,7 +19,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.nbvarnado.popularmovies.R;
-import com.nbvarnado.popularmovies.SortType;
+import com.nbvarnado.popularmovies.data.Preferences;
 import com.nbvarnado.popularmovies.ui.detail.MovieDetailsActivity;
 import com.nbvarnado.popularmovies.util.InjectorUtils;
 
@@ -25,12 +27,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity
-        implements MovieAdapter.MovieClickListener {
+        implements MovieAdapter.MovieClickListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
     private final String TAG = MainActivity.class.getSimpleName();
-
-    // State keys
-    private static final String LIFECYCLE_CALLBACK_SORT_KEY = "sort_type";
 
     // Intent Extra
     public static final String EXTRA_MOVIE_ID = "extra_movie_id";
@@ -41,7 +40,7 @@ public class MainActivity extends AppCompatActivity
 
     private MovieAdapter mMovieAdapter;
     private MainActivityViewModel mMainActivityViewModel;
-    private SortType sortType;
+    private String sort;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +48,19 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        sortType = sortType == null ? SortType.POPULAR : sortType;
+        sort = Preferences.getSortingPreference(this, getString(R.string.sort_key));
+
+        MainViewModelFactory factory = InjectorUtils.provideMainViewModelFactory(this, sort);
+        mMainActivityViewModel = ViewModelProviders.of (this, factory).get(MainActivityViewModel.class);
+        mMainActivityViewModel.getMovies().observe(this, movies -> {
+            if (movies != null) {
+                mMovieAdapter.setMovieData(movies);
+                mMovieAdapter.notifyDataSetChanged();
+                showMovies();
+            } else {
+                showError();
+            }
+        });
 
         mRecyclerView.setHasFixedSize(true);
 
@@ -59,16 +70,6 @@ public class MainActivity extends AppCompatActivity
         mRecyclerView.setAdapter(mMovieAdapter);
 
         showLoading();
-        loadMovies(sortType);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        final String POPULAR = getResources().getString(R.string.popular);
-        final String RATINGS = getResources().getString(R.string.top_rated);
-        String sortTypeString = sortType == SortType.POPULAR ? POPULAR : RATINGS;
-        outState.putString(LIFECYCLE_CALLBACK_SORT_KEY, sortTypeString);
     }
 
     @Override
@@ -81,11 +82,22 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        // Only display the menu item for the sort type that is not currently selected.
-        int idOfItemToHide = sortType == SortType.POPULAR ? R.id.sort_popular : R.id.sort_rating;
-        int idOfItemToShow = sortType == SortType.POPULAR ? R.id.sort_rating : R.id.sort_popular;
-        MenuItem itemToHide = menu.findItem(idOfItemToHide);
-        MenuItem itemToShow = menu.findItem(idOfItemToShow);
+        int selectedId;
+        switch (sort) {
+            case "popular":
+                selectedId = R.id.sort_popular;
+                break;
+            case "top_rated":
+                selectedId = R.id.sort_rating;
+                break;
+            case "favorite":
+                selectedId = R.id.sort_favorite;
+                break;
+            default:
+                selectedId = R.id.sort_popular;
+        }
+        MenuItem selectedMenuItem = menu.findItem(selectedId);
+        selectedMenuItem.setChecked(true);
         return true;
     }
 
@@ -100,48 +112,33 @@ public class MainActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.sort_popular:
-                sortType = SortType.POPULAR;
+                sort = getResources().getString(R.string.popular);
+                Preferences.setSortingPreference(this, sort);
+                mMainActivityViewModel.setmSort(sort);
                 showLoading();
-                loadMovies(sortType);
                 return true;
             case R.id.sort_rating:
-                sortType = SortType.RATINGS;
+                sort = getResources().getString(R.string.top_rated);
+                Preferences.setSortingPreference(this, sort);
+                mMainActivityViewModel.setmSort(sort);
                 showLoading();
-                loadMovies(sortType);
+                return true;
+            case R.id.sort_favorite:
+                sort = getResources().getString(R.string.favorite);
+                Preferences.setSortingPreference(this, sort);
+                mMainActivityViewModel.setmSort(sort);
+                showLoading();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    private void loadMovies(SortType sortType) {
-        String sort = getSort(sortType);
-        MainViewModelFactory factory = InjectorUtils.provideMainViewModelFactory(this, sort);
-        mMainActivityViewModel = ViewModelProviders.of (this, factory).get(MainActivityViewModel.class);
-
-        mMainActivityViewModel.getMovies(sort).observe(this, movies -> {
-            if (movies != null) {
-                mMovieAdapter.setMovieData(movies);
-                mMovieAdapter.notifyDataSetChanged();
-                showMovies();
-            } else {
-                showError();
-            }
-
-        });
-    }
-
-    private String getSort(SortType sortType) {
-        switch (sortType) {
-            case POPULAR:
-                return getResources().getString(R.string.popular);
-            case RATINGS:
-                return getResources().getString(R.string.top_rated);
-            case FAVORITE:
-                return getResources().getString(R.string.favorite);
-            default:
-                return getResources().getString(R.string.popular);
-        }
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        sort = Preferences.getSortingPreference(this, key);
+        mMovieAdapter.setMovieData(null);
+        mMainActivityViewModel.setmSort(getResources().getString(R.string.popular));
     }
 
     /**

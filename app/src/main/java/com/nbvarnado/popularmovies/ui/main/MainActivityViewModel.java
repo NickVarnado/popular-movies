@@ -6,20 +6,30 @@ import com.nbvarnado.popularmovies.data.database.movies.Movie;
 import java.util.List;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 public class MainActivityViewModel extends ViewModel {
 
     private final MovieRepository mRepository;
-    private final LiveData<List<Movie>> mMovies;
+    private MutableLiveData<List<Movie>> mMovies;
+    private String mSort;
 
-    public MainActivityViewModel(MovieRepository repository, String sort) {
+    MainActivityViewModel(MovieRepository repository, String sort) {
         mRepository = repository;
-        mMovies = repository.getMovies(sort);
+        mSort = sort;
     }
 
-    public LiveData<List<Movie>> getMovies(String sort) {
+    public LiveData<List<Movie>> getMovies() {
+        if (mMovies == null) {
+            mMovies = mRepository.getMovies(mSort);
+        }
         return mMovies;
+    }
+
+    void setmSort(String sort) {
+        this.mSort = sort;
+        mMovies = mRepository.getMovies(mSort);
     }
 
 }

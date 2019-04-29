@@ -63,7 +63,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
      * Sets the movie data.
      * @param movieData List of Movie.
      */
-    public void setMovieData(List<Movie> movieData) {
+    void setMovieData(List<Movie> movieData) {
         mMovies = movieData;
     }
 
@@ -72,7 +72,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
      * @param posterPath path for the poster
      * @return The String for the image URL.
      */
-    public String getImageUrl(String posterPath) {
+    private String getImageUrl(String posterPath) {
         String IMAGE_BASE_URL = "http://image.tmdb.org/t/p/";
         // Size can be one of the following. "w92", "w154", "w185", "w342", "w500", "w780", or "original".
         String IMAGE_SIZE = "w185";

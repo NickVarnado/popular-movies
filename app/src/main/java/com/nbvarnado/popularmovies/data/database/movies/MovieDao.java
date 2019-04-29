@@ -11,8 +11,11 @@ import androidx.room.Query;
 @Dao
 public interface MovieDao {
 
-    @Query("SELECT * FROM movie_table where sortBy=:sort")
-    LiveData<List<Movie>> getMovies(String sort);
+    @Query("SELECT * FROM movie_table WHERE isFavorite=1")
+    List<Movie> getFavoriteMovies();
+
+    @Query("SELECT * FROM movie_table WHERE sortBy=:sort")
+    List<Movie> getMovies(String sort);
 
     @Query("SELECT * FROM movie_table WHERE id = :movieId")
     LiveData<Movie> getMovieById(int movieId);

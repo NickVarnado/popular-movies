@@ -3,10 +3,12 @@ package com.nbvarnado.popularmovies.ui.detail;
 import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.nbvarnado.popularmovies.AppExecutors;
 import com.nbvarnado.popularmovies.data.database.movies.Movie;
@@ -39,6 +41,8 @@ public class MovieDetailsActivity extends AppCompatActivity {
     private static MovieDetailsViewModel mMovieDetailsViewModel;
     private static ReviewAdapter mReviewAdapter;
     private static TrailerAdapter mTrailerAdapter;
+
+    private Movie mMovie;
 
     @BindView(R.id.tv_detail_movie_title) TextView movieTitleTextView;
     @BindView(R.id.iv_detail_movie_poster) ImageView moviePosterImageView;
@@ -77,18 +81,37 @@ public class MovieDetailsActivity extends AppCompatActivity {
         mMovieDetailsViewModel.getReviews().observe(this, reviews -> {
             if (reviews != null && reviews.size() > 0) {
                 mReviewAdapter.setReviewData(reviews);
+                mReviewAdapter.notifyDataSetChanged();
             }
         });
 
         mMovieDetailsViewModel.getTrailers().observe(this, trailers -> {
             if (trailers != null && trailers.size() > 0) {
                 mTrailerAdapter.setTrailerData(trailers);
+                mTrailerAdapter.notifyDataSetChanged();
             }
+        });
+
+        favoriteMoviesImageButton.setOnClickListener(v -> {
+            final int isFav = (mMovie.getIsFavorite() == 0) ? 1 : 0;
+            AppExecutors.getInstance().diskIO().execute(() -> {
+                InjectorUtils.provideRepository(getApplicationContext()).toggleFavorite(isFav, mMovie.getId());
+            });
+            StringBuilder sb = new StringBuilder();
+            sb.append(mMovie.getTitle());
+            if (isFav == 1) {
+                sb.append(" added to favorites.");
+            } else {
+                sb.append(" removed from favorites.");
+            }
+            Toast favoriteToggleToast = Toast.makeText(getApplicationContext(), sb.toString(), Toast.LENGTH_SHORT);
+            favoriteToggleToast.show();
         });
 
     }
 
     private void populateDetailsUI(Movie movie) {
+        mMovie = movie;
         String imageUrl = getImgageUrl(movie.getPosterPath());
 
         Picasso.get()
@@ -102,14 +125,11 @@ public class MovieDetailsActivity extends AppCompatActivity {
         ratingTextView.setText(formatVoteAverage(String.valueOf(movie.getVoteAverage())));
         overviewTextView.setText(movie.getOverview());
 
-        favoriteMoviesImageButton.setOnClickListener(v -> {
-            AppExecutors.getInstance().diskIO().execute(() -> {
-                //TODO: update favorite
-                int isFav = movie.getIsFavorite();
-                isFav = (isFav == 0) ? 1 : 0;
-                InjectorUtils.provideRepository(getApplicationContext()).toggleFavorite(isFav, movie.getId());
-            });
-        });
+        int bkgd = (movie.getIsFavorite() == 0) ?
+                android.R.drawable.star_big_off : android.R.drawable.star_big_on;
+
+        favoriteMoviesImageButton.setBackgroundResource(bkgd);
+
     }
 
     /**

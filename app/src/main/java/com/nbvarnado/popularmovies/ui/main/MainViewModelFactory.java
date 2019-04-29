@@ -2,6 +2,7 @@ package com.nbvarnado.popularmovies.ui.main;
 
 import com.nbvarnado.popularmovies.data.MovieRepository;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -15,8 +16,9 @@ public class MainViewModelFactory extends ViewModelProvider.NewInstanceFactory {
         mSort = sort;
     }
 
+    @NonNull
     @Override
-    public <T extends ViewModel> T create(Class<T> modelClass) {
+    public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         return (T) new MainActivityViewModel(mMovieRepository, mSort);
     }
 }

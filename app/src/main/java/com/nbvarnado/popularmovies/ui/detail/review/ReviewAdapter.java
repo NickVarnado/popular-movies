@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewViewHolder> {
 
-    List<Review> mReviews;
+    private List<Review> mReviews;
 
     @NonNull
     @Override
@@ -46,7 +46,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
         final TextView mAuthorTextView;
         final TextView mContentTextView;
 
-        public ReviewViewHolder(@NonNull View itemView) {
+        ReviewViewHolder(@NonNull View itemView) {
             super(itemView);
             mAuthorTextView = itemView.findViewById(R.id.tv_review_author);
             mContentTextView = itemView.findViewById(R.id.tv_review_content);

@@ -8,11 +8,11 @@ import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ActionMenuView;
-import android.widget.TextView;
+import android.widget.ImageView;
 
 import com.nbvarnado.popularmovies.R;
 import com.nbvarnado.popularmovies.data.database.trailers.Trailer;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -22,6 +22,10 @@ import androidx.recyclerview.widget.RecyclerView;
 public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerViewHolder> {
 
     private static final String TAG = TrailerAdapter.class.getSimpleName();
+
+    private static final String YOUTUBE_BASE_URL = "https://www.youtube.com/watch?v=" ;
+    private static final String THUMBNAIL_BASE_URL = "https://img.youtube.com/vi/";
+    private static final String THUMBNAIL_QUALITY = "/hqdefault.jpg";
 
     private List<Trailer> mTrailers;
     private Context mContext;
@@ -40,7 +44,13 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerV
     @Override
     public void onBindViewHolder(@NonNull TrailerViewHolder holder, int position) {
         Trailer trailer = mTrailers.get(position);
-        holder.mTrailerTextView.setText(trailer.getName());
+
+        String trailerThumbnailUrl = THUMBNAIL_BASE_URL + trailer.getKey() + THUMBNAIL_QUALITY;
+        Picasso.get()
+                .load(trailerThumbnailUrl)
+                .placeholder(R.drawable.user_placeholder)
+                .error(R.drawable.error)
+                .into(holder.mTrailerImageView);
     }
 
     @Override
@@ -57,11 +67,11 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerV
 
     class TrailerViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-        final TextView mTrailerTextView;
+        final ImageView mTrailerImageView;
 
-        public TrailerViewHolder(@NonNull View itemView) {
+        TrailerViewHolder(@NonNull View itemView) {
             super(itemView);
-            mTrailerTextView = itemView.findViewById(R.id.tv_trailer_name);
+            mTrailerImageView = itemView.findViewById(R.id.iv_trailer_image);
             itemView.setOnClickListener(this);
         }
 
@@ -69,7 +79,7 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerV
         public void onClick(View v) {
             int position = getAdapterPosition();
             Trailer trailer = mTrailers.get(position);
-            String url = "https://www.youtube.com/watch?v=" + trailer.getKey();
+            String url = YOUTUBE_BASE_URL + trailer.getKey();
             Uri uri = Uri.parse(url);
 
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);

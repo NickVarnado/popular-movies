@@ -3,7 +3,10 @@
     <string name="movie_poster">Movie Poster</string>
     <string name="sort_popular">Sort by popular</string>
     <string name="sort_rating">Sort by rating</string>
+    <string name="sort_favorite">Sort by favorite</string>
     <string name="error_message">Error loading movies</string>
+
+    <string name="sort_key">sort_key</string>
 
     <!-- Used for HTTP Retrofit calls  -->
     <string name="popular">popular</string>
@@ -11,4 +14,6 @@
     <string name="favorite">favorite</string>
     <string name="trailers">Trailers</string>
     <string name="reviews">Reviews</string>
+    <string name="favorite_movie_image_button_content_description">Favorite movie image button</string>
+    <string name="movie_trailer_content_description">Movie Trailer</string>
 </resources>
