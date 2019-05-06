@@ -1,5 +1,6 @@
 package com.nbvarnado.popularmovies.ui.main;
 
+import android.content.Context;
 import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -64,7 +66,12 @@ public class MainActivity extends AppCompatActivity
 
         mRecyclerView.setHasFixedSize(true);
 
-        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(this, 2, RecyclerView.VERTICAL, false);
+        int spanCount = calculateNumberOfColumns(getApplicationContext());
+        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(this,
+                spanCount,
+                RecyclerView.VERTICAL,
+                false);
+        
         mRecyclerView.setLayoutManager(layoutManager);
         mMovieAdapter = new MovieAdapter(this);
         mRecyclerView.setAdapter(mMovieAdapter);
@@ -139,6 +146,17 @@ public class MainActivity extends AppCompatActivity
         sort = Preferences.getSortingPreference(this, key);
         mMovieAdapter.setMovieData(null);
         mMainActivityViewModel.setmSort(getResources().getString(R.string.popular));
+    }
+
+    public static int calculateNumberOfColumns(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
+        int scalingFactor = 200;
+        int numberOfColumns = (int) (dpWidth / scalingFactor);
+        if (numberOfColumns < 2) {
+            return 2;
+        }
+        return numberOfColumns;
     }
 
     /**
